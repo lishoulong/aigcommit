@@ -2,7 +2,7 @@
   "name": "aigcommit",
   "displayName": "aigcommit",
   "description": "generate commit message according to your changes",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.78.0"
   },

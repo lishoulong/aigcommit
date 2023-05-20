@@ -23,8 +23,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
       const options = {
-        // baseDir: currentWorkspacePath,
-        baseDir: '/Users/lishoulong/Documents/toutiao/lib/openai/gen-commit',
+        baseDir: currentWorkspacePath,
+        // baseDir: '/Users/lishoulong/Documents/toutiao/lib/openai/gen-commit',
         binary: 'git',
         maxConcurrentProcesses: 6,
         trimmed: false,
