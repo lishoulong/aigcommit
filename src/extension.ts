@@ -1,71 +1,69 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import * as vscode from "vscode";
-import { simpleGit, SimpleGit, SimpleGitOptions } from "simple-git";
-import * as Diff2Html from "diff2html";
-import * as cheerio from "cheerio";
-import axios from "axios";
-import clipboard from "./clipboard";
+import * as vscode from 'vscode';
+import { simpleGit, SimpleGit, SimpleGitOptions } from 'simple-git';
+import * as Diff2Html from 'diff2html';
+import * as cheerio from 'cheerio';
+import axios from 'axios';
+import ncp from 'fred-copy-paste';
+import { promisify } from 'util';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand(
-    "gen-commit.generateCommitMessage",
-    async () => {
-      try {
-        let currentWorkspacePath = "";
-        let activeEditor = vscode.window.activeTextEditor;
-        if (activeEditor !== undefined) {
-          let activeDocumentUri = activeEditor.document.uri;
-          let workspaceFolder =
-            vscode.workspace.getWorkspaceFolder(activeDocumentUri);
-          if (workspaceFolder !== undefined) {
-            currentWorkspacePath = workspaceFolder.uri.fsPath;
-          }
+  let disposable = vscode.commands.registerCommand('gen-commit.generateCommitMessage', async () => {
+    try {
+      let currentWorkspacePath = '';
+      let activeEditor = vscode.window.activeTextEditor;
+      if (activeEditor !== undefined) {
+        let activeDocumentUri = activeEditor.document.uri;
+        let workspaceFolder = vscode.workspace.getWorkspaceFolder(activeDocumentUri);
+        if (workspaceFolder !== undefined) {
+          currentWorkspacePath = workspaceFolder.uri.fsPath;
         }
-        const options = {
-          // baseDir: currentWorkspacePath,
-          baseDir: "/Users/lishoulong/Documents/toutiao/lib/openai/gen-commit",
-          binary: "git",
-          maxConcurrentProcesses: 6,
-          trimmed: false,
-        };
-        const diffs = await extractDiffs(options);
-
-        const shotCommit = await questionFromDiffs(diffs);
-
-        await copyToClipboard(shotCommit);
-      } catch (e: any) {
-        vscode.window.showInformationMessage(`aigcommit error: ${e.message}`);
       }
+
+      const config = vscode.workspace.getConfiguration('aigcommit');
+      const apiKey = config.get('apiKey');
+      vscode.window.showInformationMessage(`AigCommit is: ${apiKey}`);
+
+      const options = {
+        baseDir: currentWorkspacePath,
+        // baseDir: '/Users/lishoulong/Documents/toutiao/aig-review/infra',
+        binary: 'git',
+        maxConcurrentProcesses: 6,
+        trimmed: false,
+      };
+      const diffs = await extractDiffs(options);
+
+      const shotCommit = await questionFromDiffs(diffs);
+
+      await copyToClipboard(shotCommit);
+    } catch (e: any) {
+      vscode.window.showInformationMessage(`aigcommit error: ${e.message}`);
     }
-  );
+  });
 
   context.subscriptions.push(disposable);
 }
 
-export function askGpt3(
-  question: string,
-  axiosInstance?: any
-): Promise<string> {
+export function askGpt3(question: string, axiosInstance?: any): Promise<string> {
   return new Promise((res, rej) => {
-    const url = "https://openabcd.net/v1/chat/completions";
-    const config = vscode.workspace.getConfiguration("aigcommit");
-    const apiKey = config.get("apiKey");
-    vscode.window.showInformationMessage(`AigCommit is: ${apiKey}`);
+    const url = 'https://openabcd.net/v1/chat/completions';
+    const config = vscode.workspace.getConfiguration('aigcommit');
+    const apiKey = config.get('apiKey');
     const client =
       axiosInstance ||
       axios.create({
         headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + apiKey,
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + apiKey,
         },
       });
 
     const params = {
-      messages: [{ role: "user", content: question }],
-      model: "gpt-3.5-turbo",
+      messages: [{ role: 'user', content: question }],
+      model: 'gpt-3.5-turbo',
     };
 
     client
@@ -92,9 +90,7 @@ export async function extractDiffs(
   gitInstance?: any
 ): Promise<any[]> {
   try {
-    vscode.window.showInformationMessage(
-      `aigcommit options: ${JSON.stringify(options)}`
-    );
+    vscode.window.showInformationMessage(`aigcommit options: ${JSON.stringify(options)}`);
     const git: SimpleGit = gitInstance || simpleGit(options);
 
     // Check if the repository is initialized
@@ -107,17 +103,17 @@ export async function extractDiffs(
     // Make a first commit if there are no commits yet
     const log = await git.log().catch(() => ({ total: 0 }));
     if (!log.total) {
-      await git.add("./*");
-      await git.commit("Initial commit");
+      await git.add('./*');
+      await git.commit('Initial commit');
       vscode.window.showInformationMessage(`First commit done.`);
     }
 
     // Get the diff
-    const diffString = await git.diff(["HEAD"]);
+    const diffString = await git.diff(['HEAD']);
 
     // Convert to HTML
     const htmlString = Diff2Html.html(diffString, {
-      outputFormat: "line-by-line",
+      outputFormat: 'line-by-line',
     });
 
     // Load the HTML string
@@ -126,22 +122,22 @@ export async function extractDiffs(
     // Extract the diff information
     const diffs: { fileName: string; changes: string[] }[] = [];
 
-    $(".d2h-file-wrapper").each((i, fileWrapper) => {
-      const fileName = $(fileWrapper).find(".d2h-file-name").text();
+    $('.d2h-file-wrapper').each((i, fileWrapper) => {
+      const fileName = $(fileWrapper).find('.d2h-file-name').text();
       const changes: string[] = [];
 
       $(fileWrapper)
-        .find(".d2h-code-line")
+        .find('.d2h-code-line')
         .each((j, lineElement) => {
-          const lineText = $(lineElement).find(".d2h-code-line-ctn").text();
+          const lineText = $(lineElement).find('.d2h-code-line-ctn').text();
           const lineParent = $(lineElement).parent();
 
-          if (lineParent.hasClass("d2h-ins")) {
-            changes.push("+ " + lineText);
-          } else if (lineParent.hasClass("d2h-del")) {
-            changes.push("- " + lineText);
-          } else if (lineParent.hasClass("d2h-chg")) {
-            changes.push("* " + lineText);
+          if (lineParent.hasClass('d2h-ins')) {
+            changes.push('+ ' + lineText);
+          } else if (lineParent.hasClass('d2h-del')) {
+            changes.push('- ' + lineText);
+          } else if (lineParent.hasClass('d2h-chg')) {
+            changes.push('* ' + lineText);
           }
         });
 
@@ -162,25 +158,24 @@ export async function questionFromDiffs(
     const MAX_LENGTH = 3800; // Set this to your desired maximum length
     // Now we have an array of diffs, each of which is an object with a fileName and changes
     let commitMessages = [];
-    let currentBatch = "";
+    let currentBatch = '';
     let currentBatchLength = 0;
 
     for (let diff of diffs) {
-      let fileDiffString = `在文件 ${
-        diff.fileName
-      } 中，进行了以下更改：\n${diff.changes.join("\n")}`;
+      let fileDiffString = `在文件 ${diff.fileName} 中，进行了以下更改：\n${diff.changes.join(
+        '\n'
+      )}`;
 
       // If the file's diff is too large, summarize it
       if (fileDiffString.length > MAX_LENGTH) {
-        fileDiffString = `在文件 ${
-          diff.fileName
-        } 中，进行了以下更改：\n${summarizeDiff(diff)}`;
+        fileDiffString = `在文件 ${diff.fileName} 中，进行了以下更改：\n${summarizeDiff(diff)}`;
       }
 
       // If adding this file's diff would make the batch too large, ask about the current batch and start a new one
       if (currentBatchLength + fileDiffString.length > MAX_LENGTH) {
         const question = `我有一些代码更改需要生成commit信息。${currentBatch}\n在这些更改中， "+" 前缀的行表示新增的代码，"-" 前缀的行表示删除的代码，"*" 前缀的行表示修改的代码。请根据这些信息生成一个描述这些更改的commit信息。`;
         const commitMessage = await askGpt3(question, axiosInstance);
+        vscode.window.showInformationMessage(`文件 ${diff.fileName} 已经处理完成`);
         commitMessages.push(commitMessage);
 
         // Start a new batch with this file's diff
@@ -188,45 +183,49 @@ export async function questionFromDiffs(
         currentBatchLength = fileDiffString.length;
       } else {
         // If adding this file's diff wouldn't make the batch too large, add it to the current batch
-        currentBatch += "\n\n" + fileDiffString;
-        currentBatchLength += "\n\n".length + fileDiffString.length;
+        currentBatch += '\n\n' + fileDiffString;
+        currentBatchLength += '\n\n'.length + fileDiffString.length;
       }
     }
 
     // If there's a batch remaining, ask about it
-    if (currentBatch !== "") {
+    if (currentBatch !== '') {
       const question = `我有一些代码更改需要生成commit信息。${currentBatch}\n在这些更改中， "+" 前缀的行表示新增的代码，"-" 前缀的行表示删除的代码，"*" 前缀的行表示修改的代码。请根据这些信息生成一个描述这些更改的commit信息。`;
       const commitMessage = await askGpt3(question, axiosInstance);
       commitMessages.push(commitMessage);
     }
 
     // After generating the commit messages...
-    const commitMessageStr = commitMessages.join("\n\n");
-    console.log("commitMessageStr", commitMessageStr);
-    const question = `我有一些根据各个文件生成的多个commit信息。${commitMessageStr}\n。请把上面这些多条信息完善成一个单独的 commit 信息，如果是修复 bug 请以 bugfix: 开头，如果是新功能增加请以 feat: 开头。`;
+    const commitMessageStr = commitMessages.join('\n\n');
+
+    const question = `Based on the commit messages from various files: ${commitMessageStr}\n, please generate a single commitlint-compliant commit message, making sure the title follows the "type(scope): subject" format, and the body's lines are not longer than 100 characters.`;
     const shotCommit = await askGpt3(question, axiosInstance);
+    console.log('shotCommit', shotCommit);
     return shotCommit;
   } catch (e: any) {
-    console.error("Error in questionFromDiffs:", e.message);
+    console.error('Error in questionFromDiffs:', e.message);
     throw new Error(`generate commit message error: ${e.message}`);
   }
 }
 
 export async function copyToClipboard(shotCommit: string) {
   const action = await vscode.window.showInformationMessage(
-    "Commit messages generated. Click the button below to copy to clipboard.",
-    "Copy to Clipboard"
+    'Commit messages generated. Click the button below to copy to clipboard.',
+    'Copy to Clipboard'
   );
-  if (action === "Copy to Clipboard") {
-    try {
-      clipboard.writeSync(shotCommit);
-      vscode.window.showInformationMessage(
-        "Commit messages copied to clipboard."
-      );
-    } catch (e: any) {
-      console.error("copyToClipboard error", e);
-      throw new Error(`copyToClipboard error: ${e.message}`);
-    }
+  if (action === 'Copy to Clipboard') {
+    // clipboard.writeSync(shotCommit);
+    const newCopy = promisify(ncp.copy);
+    newCopy(shotCommit)
+      .then(() => {
+        vscode.window.showInformationMessage(`shotCommit: ${shotCommit}`);
+        vscode.window.showInformationMessage('Commit messages copied to clipboard.');
+      })
+      .catch((e: any) => {
+        console.error('copyToClipboard error', e);
+        vscode.window.showInformationMessage(`shotCommit: ${shotCommit}`);
+        throw new Error(`copyToClipboard error: ${e.message}`);
+      });
   }
 }
 
@@ -236,11 +235,11 @@ export function summarizeDiff(diff: { fileName: string; changes: string[] }) {
   let modifiedLines = 0;
 
   for (let change of diff.changes) {
-    if (change.startsWith("+")) {
+    if (change.startsWith('+')) {
       addedLines++;
-    } else if (change.startsWith("-")) {
+    } else if (change.startsWith('-')) {
       deletedLines++;
-    } else if (change.startsWith("*")) {
+    } else if (change.startsWith('*')) {
       modifiedLines++;
     }
   }
