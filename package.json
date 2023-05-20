@@ -1,0 +1,62 @@
+{
+  "name": "aigcommit",
+  "displayName": "aigcommit",
+  "description": "generate commit message according to your changes",
+  "version": "0.0.4",
+  "engines": {
+    "vscode": "^1.78.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "repository": "",
+  "main": "./out/extension.js",
+  "publisher": "libra",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gen-commit.generateCommitMessage",
+        "title": "generateCommitMessage"
+      }
+    ],
+    "configuration": {
+      "title": "aigcommit",
+      "properties": {
+        "aigcommit.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for your extension."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/tests/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/hogan.js": "^3.0.1",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.78.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.39.0",
+    "glob": "^10.2.5",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "cheerio": "^1.0.0-rc.12",
+    "diff2html": "^3.4.35",
+    "simple-git": "^3.18.0"
+  }
+}
