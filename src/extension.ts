@@ -225,6 +225,7 @@ export async function copyToClipboard(shotCommit: string) {
       );
     } catch (e: any) {
       console.error("copyToClipboard error", e);
+      vscode.window.showInformationMessage(`shotCommit: ${shotCommit}`);
       throw new Error(`copyToClipboard error: ${e.message}`);
     }
   }
