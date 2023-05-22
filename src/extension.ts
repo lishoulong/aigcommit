@@ -22,9 +22,14 @@ export function activate(context: vscode.ExtensionContext) {
           currentWorkspacePath = workspaceFolder.uri.fsPath;
         }
       }
+
+      const config = vscode.workspace.getConfiguration('aigcommit');
+      const apiKey = config.get('apiKey');
+      vscode.window.showInformationMessage(`AigCommit is: ${apiKey}`);
+
       const options = {
         baseDir: currentWorkspacePath,
-        // baseDir: '/Users/lishoulong/Documents/toutiao/lib/openai/gen-commit',
+        // baseDir: '/Users/lishoulong/Documents/toutiao/aig-review/infra',
         binary: 'git',
         maxConcurrentProcesses: 6,
         trimmed: false,
@@ -47,7 +52,6 @@ export function askGpt3(question: string, axiosInstance?: any): Promise<string> 
     const url = 'https://openabcd.net/v1/chat/completions';
     const config = vscode.workspace.getConfiguration('aigcommit');
     const apiKey = config.get('apiKey');
-    vscode.window.showInformationMessage(`AigCommit is: ${apiKey}`);
     const client =
       axiosInstance ||
       axios.create({
@@ -171,6 +175,7 @@ export async function questionFromDiffs(
       if (currentBatchLength + fileDiffString.length > MAX_LENGTH) {
         const question = `我有一些代码更改需要生成commit信息。${currentBatch}\n在这些更改中， "+" 前缀的行表示新增的代码，"-" 前缀的行表示删除的代码，"*" 前缀的行表示修改的代码。请根据这些信息生成一个描述这些更改的commit信息。`;
         const commitMessage = await askGpt3(question, axiosInstance);
+        vscode.window.showInformationMessage(`文件 ${diff.fileName} 已经处理完成`);
         commitMessages.push(commitMessage);
 
         // Start a new batch with this file's diff
@@ -192,9 +197,10 @@ export async function questionFromDiffs(
 
     // After generating the commit messages...
     const commitMessageStr = commitMessages.join('\n\n');
-    console.log('commitMessageStr', commitMessageStr);
-    const question = `我有一些根据各个文件生成的多个commit信息。${commitMessageStr}\n。请把上面这些多条信息完善成一个单独的 commit 信息，如果是修复 bug 请以 bugfix: 开头，如果是新功能增加请以 feat: 开头。`;
+
+    const question = `Based on the commit messages from various files: ${commitMessageStr}\n, please generate a single commitlint-compliant commit message, making sure the title follows the "type(scope): subject" format, and the body's lines are not longer than 100 characters.`;
     const shotCommit = await askGpt3(question, axiosInstance);
+    console.log('shotCommit', shotCommit);
     return shotCommit;
   } catch (e: any) {
     console.error('Error in questionFromDiffs:', e.message);
@@ -212,6 +218,7 @@ export async function copyToClipboard(shotCommit: string) {
     const newCopy = promisify(ncp.copy);
     newCopy(shotCommit)
       .then(() => {
+        vscode.window.showInformationMessage(`shotCommit: ${shotCommit}`);
         vscode.window.showInformationMessage('Commit messages copied to clipboard.');
       })
       .catch((e: any) => {
