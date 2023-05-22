@@ -2,9 +2,9 @@
   "name": "aigcommit",
   "displayName": "aigcommit",
   "description": "generate commit message according to your changes",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "engines": {
-    "vscode": "^1.78.0"
+    "vscode": "^1.70.0"
   },
   "categories": [
     "Other"
@@ -46,7 +46,7 @@
     "@types/hogan.js": "^3.0.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
-    "@types/vscode": "^1.78.0",
+    "@types/vscode": "^1.70.0",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
     "@vscode/test-electron": "^2.3.0",
