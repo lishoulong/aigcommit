@@ -2,7 +2,7 @@
 
 ## Features
 
-- generate commit for your local change，now it can not generate commit for your staged changes, that is if you
+- generate commit for your local change，now it can not generate commit for your staged changes, that is if you.
 
 ## Requirements
 
